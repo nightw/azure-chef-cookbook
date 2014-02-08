@@ -42,7 +42,8 @@ end
 
 
 azure_creds = Chef::EncryptedDataBagItem.load("azure", "publishsettings")
-azure_publish_settings = "/home/ubuntu/.azure.publishsettings"
+
+azure_publish_settings = "/tmp/.azure.publishsettings"
 
 template azure_publish_settings do
   source "azure.publishsettings.erb"
@@ -53,9 +54,12 @@ template azure_publish_settings do
   })
 end
 
-execute "azure::import" do
-  user "ubuntu"
-  command "azure account import #{azure_publish_settings}"
+node['azure']['system_users_to_set_up'].each do |user|
+  execute "azure::import" do
+    user user
+    environment ({ 'HOME' => (user == 'root' ? '/root' : "/home/#{user}") })
+    command "azure account import #{azure_publish_settings}"
+  end
 end
 
 file azure_publish_settings do

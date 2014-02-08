@@ -1,4 +1,5 @@
 node.default['azure'] = {
   'disk' => {},
-  'endpoint' => {}
+  'endpoint' => {},
+  'system_users_to_set_up' => ['root']
 }
