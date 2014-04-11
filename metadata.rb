@@ -1,7 +1,8 @@
-maintainer       "Example Com"
-maintainer_email "ops@example.com"
+name             'azure-chef-cookbook'
+maintainer       "Pal David Gergely"
+maintainer_email "nightw17@gmail.com"
 license          "Apache 2.0"
-description      "Installs/Configures azure"
+description      "Installs azure-cli npm package"
 
 version          "0.1"
 depends          "ark"
