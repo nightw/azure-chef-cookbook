@@ -40,29 +40,40 @@ file "/etc/profile.d/azure.env.sh" do
   content "export PATH=#{azure_cli_path}/bin:$PATH"
 end
 
-
-azure_creds = Chef::EncryptedDataBagItem.load("azure", "publishsettings")
-
-azure_publish_settings = "/tmp/.azure.publishsettings"
-
-template azure_publish_settings do
-  source "azure.publishsettings.erb"
-  variables({
-    subscription_id: azure_creds['subscription_id'],
-    subscription_name: azure_creds['subscription_name'],
-    subscription_certificate: azure_creds['subscription_certificate']
-  })
-end
+# Gather information of which users still need azure account credentials set up
+system_users_to_set_up = []
 
 node['azure']['system_users_to_set_up'].each do |user|
-  execute "azure::import" do
-    user user
-    environment ({ 'HOME' => (user == 'root' ? '/root' : "/home/#{user}") })
-    command "azure account import #{azure_publish_settings}"
-  end
+  home = user == 'root' ? '/root' : "/home/#{user}"
+  system_users_to_set_up.push user if ! ::File.exist? "#{home}/.azure/azureProfile.json"
 end
 
-file azure_publish_settings do
-  action :delete
+# Only even bother startin the following steps if there is any user that needs
+# setup
+if !system_users_to_set_up.empty?
+  azure_creds = Chef::EncryptedDataBagItem.load("azure", "publishsettings")
+
+  azure_publish_settings = "/tmp/.azure.publishsettings"
+
+  template azure_publish_settings do
+    source "azure.publishsettings.erb"
+    variables({
+      subscription_id: azure_creds['subscription_id'],
+      subscription_name: azure_creds['subscription_name'],
+      subscription_certificate: azure_creds['subscription_certificate']
+    })
+  end
+
+  system_users_to_set_up.each do |user|
+    execute "azure::import" do
+      user user
+      environment ({ 'HOME' => (user == 'root' ? '/root' : "/home/#{user}") })
+      command "azure account import #{azure_publish_settings}"
+    end
+  end
+
+  file azure_publish_settings do
+    action :delete
+  end
 end
 
